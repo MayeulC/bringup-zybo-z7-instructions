@@ -115,3 +115,5 @@ ARM distributions, and stick it on the second partition.
 You can use the contents from the following archive, for example, to have a linaro installation:
 https://releases.linaro.org/archive/15.06/ubuntu/vivid-images/nano/linaro-vivid-nano-20150618-705.tar.gz
 
+Boot image files are present in the boot/ directory. You can find the Linux kernel source code at 
+https://github.com/DigilentInc/Linux-Digilent-Dev under the GPLv2 license.
