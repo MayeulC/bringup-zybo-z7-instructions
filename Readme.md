@@ -24,6 +24,22 @@ The following ressources were used as sources of information during the bringup,
 * https://reference.digilentinc.com/reference/programmable-logic/zybo-z7/migration-guide
 * http://www.wiki.xilinx.com/Build+Kernel
 
+## A quick note on compilation
+You can safely skip this part if you are experienced with (cross-)compilation.
+
+During compilation, a few environment variables are kept in the terminal they were defined in (with the `export`
+keyword). Those export are necessary to compile the code for the right architecture. Hence, it probably is a good
+idea to perform all the steps in the same terminal window.
+
+The explanations here assume that you already have a cross-compilation toolchain on your computer. You might want
+to install the following candidates: `make`, `git`, and a cross-compiler such as `arm-none-eabi-gcc`. Consult
+your distribution's documentation for the right package names.
+
+In the following steps, we generally employ `-j 5`. `-jN` (the space can be ommited) tells make to use
+`N` parallel threads to perform the job, which should speed up things quite a bit. It is generally
+regarded as a good idea to put the number of CPU cores you have +1, so that they are fully used.
+Adjust as needed.
+
 ## Receipe for bring up
 As we received the boards late in the development process, and those were changed from zedboards to the current models,
 bringup was done as quickly as possible as the deadline was closing, in a "move fast and break things" fashion.
@@ -45,37 +61,51 @@ The basic process was:
     * As data, the uboot elf image from the same repository
 * Create and export the BOOT.bin image. Reserve for later (this is a receipe, after all)
 
-### Zimage
+We should have been able to compile our own u-boot and use this one, but it didn't work for reasons that remain unknown as of now.
+Nevertheless, you probably want U-Boot tools on your computer for the next steps. Either **Install them from your distribution's depots
+or do the following**:
 
-Any kernel with support for the zedboard should work in theory, in practice we had more luck with the
-zImage from https://github.com/MarioLizanaC/Ready_for_Work_Zybo_Base_System than with our own kernels
-(the same can be said about u-boot, and it remains to be seen why this is the case).
+Clone https://github.com/MayeulC/bringup-zybo-z7-u-boot-xlnx , and run in the repository:
+```
+    export ARCH=arm
+    export CROSS_COMPILE=arm-none-eabi-
+    export PATH=$PWD/tools/:$PATH
+    make zynq_zybo_z7_config
+    make -j 5
+```
+Note that if you install `uboot-tools` or equivalent from your distribution, you will still need to perform the first two `export`s
+to compile the remaining files.
+
+### zImage
+
+Any kernel with support for the zedboard should work in theory, while in practice we compiled it ourselves. A zImage
+is a self-extractible compressed kernel image.
+
+To compile your own, clone the https://github.com/MayeulC/bringup-zybo-z7-linux-xlnx repository, and **assuming you
+have kept the same terminal as the one you ran the previous command in** (if that's not the case, cd back and do the
+exports again), run:
+
+```
+    make xilinx_zynq_defconfig
+    make UIMAGE_LOADADDR=0x00008000 uImage modules -j5
+```
+And grab the generated zImage.
 
 ### Device tree
 
 For any kernel to work, we need a device tree. The one from https://github.com/cryptotronix/u-boot-xlnx was used.
-The device tree was added to xilinx's Linux kernel tree, in https://github.com/MayeulC/bringup-zybo-z7-linux-xlnx
-Clone this repository and run:
+In the same repository, and preferably with the same command prompt to keep the environment variables, just run:
 
 ```
-    export ARCH=arm
-    export CROSS_COMPILE=arm-none-eabi-
-    export echo PATH=/path-to-uboot-source-tree/tools:$PATH
-    make xilinx_zynq_defconfig
     make zynq-zybo-z7.dtb
 ```
 
-Note: you probably want to clone something like https://github.com/MayeulC/bringup-zybo-z7-u-boot-xlnx or install the
-u-boot-tools for your distribution.
-
-Usually, at this point, you might want to try to build your kernel with `make UIMAGE_LOADADDR=0x00008000 uImage modules -j`,
-but we had no luck with the generated image.
-
-Grab the generated `zynq-zybo-z7.dtb` and reserve it for later.
+And grab the generated `zynq-zybo-z7.dtb` (it should have told you the path).
 
 ### Putting it all together
 
-You should have three files by now. Take your SD card, format it with fdisk (something like this, this wasn't double-checked):
+You should have three files by now. Take your SD card, format it with fdisk (something like this, but keep in mind
+that this wasn't double-checked):
 
 ```
     fdisk /dev/sdx
@@ -115,5 +145,17 @@ ARM distributions, and stick it on the second partition.
 You can use the contents from the following archive, for example, to have a linaro installation:
 https://releases.linaro.org/archive/15.06/ubuntu/vivid-images/nano/linaro-vivid-nano-20150618-705.tar.gz
 
-Boot image files are present in the boot/ directory. You can find the Linux kernel source code at 
-https://github.com/DigilentInc/Linux-Digilent-Dev under the GPLv2 license.
+Alternatively, you can also do the following to get a Arch Linux running:
+```
+    wget http://os.archlinuxarm.org/os/ArchLinuxARM-zedboard-latest.tar.gz
+    mkdir tmp && mount /dev/sdX1 tmp
+    bsdtar -xpf ArchLinuxARM-zedboard-latest.tar.gz -C mnt
+    sync # it is always a good idea to sync after I/O intensive tasks, esp. before removing SD cards
+    umount tmp
+```
+
+## Final word
+
+Pre compiled, ready-to-use (at least for the zybo z7-10) boot image files are present in the boot/
+directory.
+You can find the Linux kernel source code at https://github.com/MayeulC/bringup-zybo-z7-linux-xlnx under the GPLv2 license.
