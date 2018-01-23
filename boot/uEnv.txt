@@ -1,0 +1,6 @@
+zimgload=fatload mmc 0 0x3000000 zImage
+dtbload=fatload mmc 0 0x2A00000 zynq-zybo-z7.dtb
+bootargs=console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait
+bootkernel=bootz 0x3000000 - 0x2A00000;
+bootcmd=run zimgload && run dtbload && run bootkernel
+

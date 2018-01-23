@@ -127,15 +127,17 @@ that this wasn't double-checked):
     mkfs.ext4 /dev/sdX2
 ```
 
-Now, copy your files on the first partition, you might want to add a `boot.scr` file with the following as well:
+Now, copy your files on the first partition, you might want to add a `uEnv.txt` file with the following as well:
 
 ```
-    fatload mmc 0 0x3000000 zImage
-    fatload mmc 0 0x2A00000 zynq-zybo-z7.dtb
-    setenv bootargs console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait
-    bootz 0x3000000 - 0x2A00000;
+    zimgload=fatload mmc 0 0x3000000 zImage
+    dtbload=fatload mmc 0 0x2A00000 zynq-zybo-z7.dtb
+    bootargs=console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait
+    bootkernel=bootz 0x3000000 - 0x2A00000;
+    bootcmd=run zimgload && run dtbload && run bootkernel
 ```
-Those commands will be executed by uboot during boot, but could be typed as well.
+Those are environment variables that will be loaded by u-boot during boot.
+These commands could be typed as well, but defining `bootcmd` will make the zybo execute those commands on startup.
 
 ### Userspace and root partition
 
